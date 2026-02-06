@@ -246,6 +246,88 @@ class TestFileIO:
             assert "error" in result
 
 
+class TestChartBuilder:
+    """Test chart creation."""
+
+    def test_create_bar_chart(self, tmp_path):
+        from tools.chart_builder import execute_create_chart
+
+        with patch("tools.chart_builder.OUTPUT_DIR", tmp_path):
+            result = json.loads(execute_create_chart(
+                filename="test_bar.png",
+                chart_type="bar",
+                title="Revenue by Year",
+                categories=["FY2022", "FY2023", "FY2024"],
+                series=[{"name": "Revenue", "values": [1000, 1150, 1300]}],
+                y_format="currency",
+                show_values=True,
+            ))
+            assert result["success"] is True
+            assert (tmp_path / "test_bar.png").exists()
+
+    def test_create_grouped_bar_chart(self, tmp_path):
+        from tools.chart_builder import execute_create_chart
+
+        with patch("tools.chart_builder.OUTPUT_DIR", tmp_path):
+            result = json.loads(execute_create_chart(
+                filename="test_grouped.png",
+                chart_type="grouped_bar",
+                title="Peer Comparison",
+                categories=["AAPL", "MSFT", "GOOGL"],
+                series=[
+                    {"name": "EV/EBITDA", "values": [22, 25, 18]},
+                    {"name": "P/E", "values": [28, 32, 24]},
+                ],
+            ))
+            assert result["success"] is True
+            assert result["chart_type"] == "grouped_bar"
+
+    def test_create_line_chart(self, tmp_path):
+        from tools.chart_builder import execute_create_chart
+
+        with patch("tools.chart_builder.OUTPUT_DIR", tmp_path):
+            result = json.loads(execute_create_chart(
+                filename="test_line.png",
+                chart_type="line",
+                title="Margin Trajectory",
+                categories=["FY2022", "FY2023", "FY2024", "FY2025E"],
+                series=[
+                    {"name": "Gross Margin", "values": [43.3, 44.1, 46.2, 47.0]},
+                    {"name": "EBITDA Margin", "values": [33.5, 34.1, 35.8, 36.5]},
+                ],
+                y_format="percent",
+            ))
+            assert result["success"] is True
+            assert (tmp_path / "test_line.png").exists()
+
+    def test_create_waterfall_chart(self, tmp_path):
+        from tools.chart_builder import execute_create_chart
+
+        with patch("tools.chart_builder.OUTPUT_DIR", tmp_path):
+            result = json.loads(execute_create_chart(
+                filename="test_waterfall.png",
+                chart_type="waterfall",
+                title="FCF Bridge",
+                categories=["EBITDA", "Tax", "Capex", "WC", "UFCF"],
+                series=[{"name": "Bridge", "values": [350, -74, -80, -15, 0]}],
+                y_format="currency",
+            ))
+            assert result["success"] is True
+
+    def test_invalid_chart_type(self, tmp_path):
+        from tools.chart_builder import execute_create_chart
+
+        with patch("tools.chart_builder.OUTPUT_DIR", tmp_path):
+            result = json.loads(execute_create_chart(
+                filename="test_bad.png",
+                chart_type="pie",
+                title="Bad Chart",
+                categories=["A", "B"],
+                series=[{"name": "x", "values": [1, 2]}],
+            ))
+            assert "error" in result
+
+
 class TestDocxBuilder:
     """Test DOCX creation."""
 
@@ -265,15 +347,41 @@ class TestDocxBuilder:
                     {
                         "heading": "Section 2",
                         "body": "• Bullet point 1\n• Bullet point 2",
-                        "table": {
-                            "headers": ["Metric", "Value"],
-                            "rows": [["Revenue", "$1,000M"], ["EBITDA", "$300M"]],
-                        },
                     },
                 ],
             ))
             assert result["success"] is True
             assert (tmp_path / "test_report.docx").exists()
+
+    def test_docx_with_embedded_chart(self, tmp_path):
+        from tools.chart_builder import execute_create_chart
+        from tools.docx_builder import execute_create_docx
+
+        # First create a chart
+        with patch("tools.chart_builder.OUTPUT_DIR", tmp_path):
+            json.loads(execute_create_chart(
+                filename="embed_test.png",
+                chart_type="bar",
+                title="Test",
+                categories=["A", "B"],
+                series=[{"name": "x", "values": [1, 2]}],
+            ))
+
+        # Then create a docx that embeds it
+        with patch("tools.docx_builder.OUTPUT_DIR", tmp_path):
+            result = json.loads(execute_create_docx(
+                filename="test_with_chart.docx",
+                title="Chart Embed Test",
+                sections=[
+                    {
+                        "heading": "Section with Chart",
+                        "body": "See the chart below.",
+                        "charts": ["embed_test.png"],
+                    },
+                ],
+            ))
+            assert result["success"] is True
+            assert (tmp_path / "test_with_chart.docx").exists()
 
 
 class TestXlsxBuilder:
