@@ -1,0 +1,329 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ResearchState",
+  "description": "Output of Agent 1 (Research Agent). Contains structured findings from web research, SEC filings, and industry analysis. This file IS the delegation spec for Agent 2.",
+  "type": "object",
+  "required": ["company", "thesis", "business", "industry", "financials", "modeling_guidance", "sources", "meta"],
+  "properties": {
+    "company": {
+      "type": "object",
+      "required": ["ticker", "name", "sector", "market_cap_b", "price", "shares_outstanding_m", "currency", "exchange"],
+      "properties": {
+        "ticker": { "type": "string" },
+        "name": { "type": "string" },
+        "sector": { "type": "string" },
+        "sub_industry": { "type": "string" },
+        "market_cap_b": { "type": "number", "description": "Market cap in billions" },
+        "price": { "type": "number", "description": "Current share price" },
+        "shares_outstanding_m": { "type": "number", "description": "Shares outstanding in millions (diluted)" },
+        "currency": { "type": "string", "default": "USD" },
+        "exchange": { "type": "string" },
+        "fiscal_year_end": { "type": "string", "description": "e.g. December, March" }
+      }
+    },
+    "thesis": {
+      "type": "object",
+      "required": ["one_line", "variant_perception", "pivotal_points"],
+      "description": "The investment narrative. Agent 2 traces every model assumption back to this.",
+      "properties": {
+        "one_line": { "type": "string", "description": "The investment case in one sentence" },
+        "variant_perception": { "type": "string", "description": "What we see that consensus misses" },
+        "pivotal_points": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "maxItems": 5,
+          "description": "The 1-5 things the entire case hinges on"
+        },
+        "bull_narrative": { "type": "string", "description": "2-3 sentences: what the world looks like if we're right" },
+        "bear_narrative": { "type": "string", "description": "2-3 sentences: what the world looks like if we're wrong" }
+      }
+    },
+    "business": {
+      "type": "object",
+      "required": ["description", "segments", "revenue_model"],
+      "properties": {
+        "description": { "type": "string", "description": "Clear explanation of what the company does and how it makes money" },
+        "segments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "description"],
+            "properties": {
+              "name": { "type": "string" },
+              "description": { "type": "string" },
+              "revenue_latest_m": { "type": "number", "description": "Latest FY revenue in millions" },
+              "revenue_pct": { "type": "number", "description": "% of total revenue" },
+              "operating_margin_pct": { "type": "number" },
+              "growth_rate_pct": { "type": "number", "description": "YoY growth rate" },
+              "key_drivers": { "type": "string" },
+              "secular_trends": { "type": "string" }
+            }
+          }
+        },
+        "revenue_model": { "type": "string", "description": "How the company monetizes: subscription, transactional, licensing, etc." },
+        "customers": {
+          "type": "object",
+          "properties": {
+            "concentration": { "type": "string", "description": "Top customer %, top 10 customer %" },
+            "switching_costs": { "type": "string", "enum": ["low", "medium", "high"], "description": "with reasoning" },
+            "switching_costs_rationale": { "type": "string" },
+            "net_retention_pct": { "type": "number" },
+            "customer_dynamics": { "type": "string" }
+          }
+        },
+        "management": {
+          "type": "object",
+          "properties": {
+            "ceo_name": { "type": "string" },
+            "ceo_tenure_years": { "type": "number" },
+            "quality_assessment": { "type": "string" },
+            "compensation_alignment": { "type": "string", "description": "How comp aligns with shareholder value" },
+            "track_record": { "type": "string", "description": "Key capital allocation decisions and outcomes" },
+            "insider_ownership_pct": { "type": "number" },
+            "red_flags": { "type": "string" }
+          }
+        },
+        "moat": {
+          "type": "object",
+          "properties": {
+            "type": { "type": "string", "description": "network effects, switching costs, scale, brand, IP, regulatory" },
+            "strength": { "type": "string", "enum": ["none", "narrow", "wide"] },
+            "durability": { "type": "string", "description": "Is the moat widening, stable, or eroding? Why?" },
+            "evidence": { "type": "string" }
+          }
+        }
+      }
+    },
+    "industry": {
+      "type": "object",
+      "required": ["competitive_dynamics"],
+      "properties": {
+        "tam": {
+          "type": "object",
+          "properties": {
+            "size_b": { "type": "number", "description": "Total addressable market in billions" },
+            "growth_rate_pct": { "type": "number" },
+            "source": { "type": "string" },
+            "sam_b": { "type": "number", "description": "Serviceable addressable market" }
+          }
+        },
+        "competitive_dynamics": { "type": "string", "description": "Porter's five forces summary — focus on what actually matters" },
+        "barriers_to_entry": { "type": "string" },
+        "competitors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string" },
+              "ticker": { "type": "string" },
+              "revenue_m": { "type": "number" },
+              "operating_margin_pct": { "type": "number" },
+              "market_share_pct": { "type": "number" },
+              "ev_ebitda": { "type": "number" },
+              "pe_fwd": { "type": "number" },
+              "competitive_advantage": { "type": "string" },
+              "key_difference": { "type": "string" }
+            }
+          }
+        },
+        "industry_lifecycle": { "type": "string", "enum": ["emerging", "growth", "mature", "declining"] },
+        "regulatory_environment": { "type": "string" },
+        "disruption_risk": { "type": "string" }
+      }
+    },
+    "financials": {
+      "type": "object",
+      "required": ["historical"],
+      "description": "3-5 year historical financials from SEC filings or reliable sources",
+      "properties": {
+        "historical": {
+          "type": "object",
+          "description": "Historical P&L, balance sheet summary, and cash flow. Keys are fiscal years.",
+          "properties": {
+            "income_statement": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["fiscal_year", "revenue_m"],
+                "properties": {
+                  "fiscal_year": { "type": "integer" },
+                  "revenue_m": { "type": "number" },
+                  "revenue_growth_pct": { "type": "number" },
+                  "gross_profit_m": { "type": "number" },
+                  "gross_margin_pct": { "type": "number" },
+                  "operating_income_m": { "type": "number" },
+                  "operating_margin_pct": { "type": "number" },
+                  "ebitda_m": { "type": "number" },
+                  "ebitda_margin_pct": { "type": "number" },
+                  "net_income_m": { "type": "number" },
+                  "eps_diluted": { "type": "number" },
+                  "sbc_m": { "type": "number", "description": "Stock-based compensation" },
+                  "rd_m": { "type": "number", "description": "R&D expense" },
+                  "rd_pct_revenue": { "type": "number" }
+                }
+              }
+            },
+            "balance_sheet": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["fiscal_year"],
+                "properties": {
+                  "fiscal_year": { "type": "integer" },
+                  "cash_and_equivalents_m": { "type": "number" },
+                  "total_debt_m": { "type": "number" },
+                  "net_debt_m": { "type": "number" },
+                  "total_assets_m": { "type": "number" },
+                  "total_equity_m": { "type": "number" },
+                  "invested_capital_m": { "type": "number" },
+                  "goodwill_m": { "type": "number" },
+                  "working_capital_m": { "type": "number" }
+                }
+              }
+            },
+            "cash_flow": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["fiscal_year"],
+                "properties": {
+                  "fiscal_year": { "type": "integer" },
+                  "cfo_m": { "type": "number", "description": "Cash from operations" },
+                  "capex_m": { "type": "number" },
+                  "fcf_m": { "type": "number", "description": "Free cash flow" },
+                  "fcf_margin_pct": { "type": "number" },
+                  "dividends_m": { "type": "number" },
+                  "buybacks_m": { "type": "number" },
+                  "acquisitions_m": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        "earnings_quality": {
+          "type": "object",
+          "properties": {
+            "accruals_vs_cash": { "type": "string", "description": "Is earnings quality high? CFO/Net Income ratio trends" },
+            "revenue_recognition_flags": { "type": "string" },
+            "off_balance_sheet": { "type": "string" },
+            "audit_concerns": { "type": "string" },
+            "overall_assessment": { "type": "string", "enum": ["high", "medium", "low"] }
+          }
+        },
+        "capital_allocation": {
+          "type": "object",
+          "properties": {
+            "reinvestment_rate_pct": { "type": "number", "description": "(Capex + R&D - D&A) / NOPAT" },
+            "roic_pct": { "type": "number", "description": "Return on invested capital" },
+            "incremental_roic_pct": { "type": "number" },
+            "m_and_a_history": { "type": "string" },
+            "buyback_effectiveness": { "type": "string" },
+            "dividend_policy": { "type": "string" },
+            "overall_assessment": { "type": "string" }
+          }
+        }
+      }
+    },
+    "modeling_guidance": {
+      "type": "object",
+      "required": ["revenue_approach", "key_drivers"],
+      "description": "Agent 1's recommendations to Agent 2 on how to build the model. This is the critical handoff.",
+      "properties": {
+        "revenue_approach": {
+          "type": "string",
+          "enum": ["bottom_up", "top_down", "hybrid"],
+          "description": "bottom_up: model by segment/product/customer. top_down: TAM * share. hybrid: both with reconciliation."
+        },
+        "revenue_approach_rationale": { "type": "string", "description": "Why this approach fits this company" },
+        "key_drivers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["driver", "base_case", "rationale"],
+            "properties": {
+              "driver": { "type": "string" },
+              "base_case": { "type": "number" },
+              "unit": { "type": "string" },
+              "bull_case": { "type": "number" },
+              "bear_case": { "type": "number" },
+              "rationale": { "type": "string" },
+              "source": { "type": "string" }
+            }
+          }
+        },
+        "margin_drivers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["driver", "direction"],
+            "properties": {
+              "driver": { "type": "string" },
+              "direction": { "type": "string", "enum": ["expanding", "stable", "compressing"] },
+              "magnitude": { "type": "string" },
+              "rationale": { "type": "string" }
+            }
+          }
+        },
+        "capex_guidance": {
+          "type": "object",
+          "properties": {
+            "maintenance_capex_pct_revenue": { "type": "number" },
+            "growth_capex_trend": { "type": "string" },
+            "asset_intensity": { "type": "string", "enum": ["asset_light", "moderate", "asset_heavy"] }
+          }
+        },
+        "working_capital_dynamics": { "type": "string" },
+        "risks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["risk", "probability", "impact"],
+            "properties": {
+              "risk": { "type": "string" },
+              "probability": { "type": "string", "enum": ["low", "medium", "high"] },
+              "impact": { "type": "string", "enum": ["low", "medium", "high"] },
+              "mitigant": { "type": "string" },
+              "model_impact": { "type": "string", "description": "How this would change model assumptions" }
+            }
+          }
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "description": "Every source consulted. Agent 3 uses these for citation in the report.",
+      "items": {
+        "type": "object",
+        "required": ["document", "key_data_extracted"],
+        "properties": {
+          "document": { "type": "string", "description": "Title or description of source" },
+          "url": { "type": "string" },
+          "date": { "type": "string" },
+          "key_data_extracted": { "type": "string", "description": "What specific data points came from this source" }
+        }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "required": ["research_completed_at", "coverage_assessment"],
+      "properties": {
+        "research_completed_at": { "type": "string", "format": "date-time" },
+        "total_tool_calls": { "type": "integer" },
+        "coverage_assessment": {
+          "type": "object",
+          "properties": {
+            "overall": { "type": "string", "enum": ["insufficient", "adequate", "thorough"] },
+            "gaps": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Known areas where research is thin"
+            },
+            "confidence_level": { "type": "string", "enum": ["low", "medium", "high"] }
+          }
+        }
+      }
+    }
+  }
+}

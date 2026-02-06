@@ -1,0 +1,494 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ModelState",
+  "description": "Output of Agent 2 (Model + Valuation Agent). Contains the full financial model, valuations, scenarios, and consistency checks. Agent 3 reads this + research_state.json to produce the report and Excel.",
+  "type": "object",
+  "required": ["assumptions", "income_statement", "fcf_build", "roic", "valuation", "scenarios", "consistency_checks", "meta"],
+  "properties": {
+    "assumptions": {
+      "type": "object",
+      "required": ["revenue", "wacc"],
+      "description": "Every assumption must trace back to research_state via source_finding references",
+      "properties": {
+        "forecast_period": {
+          "type": "object",
+          "properties": {
+            "explicit_years": { "type": "integer", "description": "Number of explicit forecast years (typically 5-7)" },
+            "start_year": { "type": "integer" },
+            "end_year": { "type": "integer" }
+          }
+        },
+        "revenue": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["segment", "fiscal_year", "value_m", "growth_pct", "source_finding"],
+            "properties": {
+              "segment": { "type": "string" },
+              "fiscal_year": { "type": "integer" },
+              "value_m": { "type": "number" },
+              "growth_pct": { "type": "number" },
+              "source_finding": { "type": "string", "description": "JSON path to the research finding driving this assumption, e.g. 'modeling_guidance.key_drivers[0]'" },
+              "rationale": { "type": "string" }
+            }
+          }
+        },
+        "margins": {
+          "type": "object",
+          "properties": {
+            "gross_margin_pct": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "fiscal_year": { "type": "integer" },
+                  "value": { "type": "number" },
+                  "driver": { "type": "string" }
+                }
+              }
+            },
+            "operating_margin_pct": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "fiscal_year": { "type": "integer" },
+                  "value": { "type": "number" },
+                  "driver": { "type": "string" }
+                }
+              }
+            },
+            "sbc_pct_revenue": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "fiscal_year": { "type": "integer" },
+                  "value": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        "wacc": {
+          "type": "object",
+          "required": ["risk_free_rate_pct", "equity_risk_premium_pct", "beta", "cost_of_equity_pct", "wacc_pct"],
+          "properties": {
+            "risk_free_rate_pct": { "type": "number" },
+            "equity_risk_premium_pct": { "type": "number" },
+            "beta": { "type": "number" },
+            "size_premium_pct": { "type": "number", "default": 0 },
+            "company_specific_premium_pct": { "type": "number", "default": 0 },
+            "cost_of_equity_pct": { "type": "number" },
+            "pre_tax_cost_of_debt_pct": { "type": "number" },
+            "tax_rate_pct": { "type": "number" },
+            "after_tax_cost_of_debt_pct": { "type": "number" },
+            "debt_to_total_capital_pct": { "type": "number" },
+            "equity_to_total_capital_pct": { "type": "number" },
+            "wacc_pct": { "type": "number" }
+          }
+        },
+        "terminal": {
+          "type": "object",
+          "properties": {
+            "method": { "type": "string", "enum": ["perpetuity_growth", "exit_multiple", "both"] },
+            "perpetuity_growth_rate_pct": { "type": "number" },
+            "exit_ev_ebitda": { "type": "number" },
+            "terminal_roic_pct": { "type": "number" },
+            "terminal_reinvestment_rate_pct": { "type": "number" }
+          }
+        },
+        "tax_rate_pct": { "type": "number" },
+        "shares_outstanding_m": { "type": "number" },
+        "net_debt_m": { "type": "number" }
+      }
+    },
+    "income_statement": {
+      "type": "object",
+      "description": "Full P&L: historical years + forecast years",
+      "properties": {
+        "historical": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["fiscal_year", "revenue_m"],
+            "properties": {
+              "fiscal_year": { "type": "integer" },
+              "revenue_m": { "type": "number" },
+              "cogs_m": { "type": "number" },
+              "gross_profit_m": { "type": "number" },
+              "gross_margin_pct": { "type": "number" },
+              "sga_m": { "type": "number" },
+              "rd_m": { "type": "number" },
+              "other_opex_m": { "type": "number" },
+              "operating_income_m": { "type": "number" },
+              "operating_margin_pct": { "type": "number" },
+              "ebitda_m": { "type": "number" },
+              "ebitda_margin_pct": { "type": "number" },
+              "interest_expense_m": { "type": "number" },
+              "pre_tax_income_m": { "type": "number" },
+              "tax_m": { "type": "number" },
+              "effective_tax_rate_pct": { "type": "number" },
+              "net_income_m": { "type": "number" },
+              "eps_diluted": { "type": "number" },
+              "da_m": { "type": "number" },
+              "sbc_m": { "type": "number" }
+            }
+          }
+        },
+        "forecast": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["fiscal_year", "revenue_m"],
+            "properties": {
+              "fiscal_year": { "type": "integer" },
+              "revenue_m": { "type": "number" },
+              "revenue_growth_pct": { "type": "number" },
+              "cogs_m": { "type": "number" },
+              "gross_profit_m": { "type": "number" },
+              "gross_margin_pct": { "type": "number" },
+              "sga_m": { "type": "number" },
+              "rd_m": { "type": "number" },
+              "other_opex_m": { "type": "number" },
+              "operating_income_m": { "type": "number" },
+              "operating_margin_pct": { "type": "number" },
+              "ebitda_m": { "type": "number" },
+              "ebitda_margin_pct": { "type": "number" },
+              "da_m": { "type": "number" },
+              "sbc_m": { "type": "number" },
+              "interest_expense_m": { "type": "number" },
+              "pre_tax_income_m": { "type": "number" },
+              "tax_m": { "type": "number" },
+              "net_income_m": { "type": "number" },
+              "eps_diluted": { "type": "number" },
+              "nopat_m": { "type": "number" }
+            }
+          }
+        }
+      }
+    },
+    "fcf_build": {
+      "type": "object",
+      "description": "Free cash flow build from EBITDA or NOPAT down to UFCF and per-share",
+      "properties": {
+        "historical": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["fiscal_year"],
+            "properties": {
+              "fiscal_year": { "type": "integer" },
+              "ebitda_m": { "type": "number" },
+              "cash_taxes_m": { "type": "number" },
+              "change_in_wc_m": { "type": "number" },
+              "capex_m": { "type": "number" },
+              "ufcf_m": { "type": "number", "description": "Unlevered free cash flow" },
+              "sbc_m": { "type": "number" },
+              "ufcf_ex_sbc_m": { "type": "number" },
+              "fcf_margin_pct": { "type": "number" },
+              "fcf_per_share": { "type": "number" }
+            }
+          }
+        },
+        "forecast": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["fiscal_year"],
+            "properties": {
+              "fiscal_year": { "type": "integer" },
+              "ebitda_m": { "type": "number" },
+              "cash_taxes_m": { "type": "number" },
+              "change_in_wc_m": { "type": "number" },
+              "capex_m": { "type": "number" },
+              "ufcf_m": { "type": "number" },
+              "sbc_m": { "type": "number" },
+              "ufcf_ex_sbc_m": { "type": "number" },
+              "fcf_margin_pct": { "type": "number" },
+              "fcf_per_share": { "type": "number" }
+            }
+          }
+        }
+      }
+    },
+    "roic": {
+      "type": "object",
+      "description": "Return on invested capital decomposition — critical for consistency checks",
+      "properties": {
+        "decomposition": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["fiscal_year", "roic_pct"],
+            "properties": {
+              "fiscal_year": { "type": "integer" },
+              "nopat_m": { "type": "number" },
+              "invested_capital_m": { "type": "number" },
+              "nopat_margin_pct": { "type": "number" },
+              "capital_turnover": { "type": "number" },
+              "roic_pct": { "type": "number" },
+              "wacc_pct": { "type": "number" },
+              "spread_pct": { "type": "number", "description": "ROIC - WACC" }
+            }
+          }
+        },
+        "eva": {
+          "type": "array",
+          "description": "Economic Value Added",
+          "items": {
+            "type": "object",
+            "properties": {
+              "fiscal_year": { "type": "integer" },
+              "nopat_m": { "type": "number" },
+              "capital_charge_m": { "type": "number" },
+              "eva_m": { "type": "number" }
+            }
+          }
+        }
+      }
+    },
+    "valuation": {
+      "type": "object",
+      "required": ["dcf", "synthesis"],
+      "properties": {
+        "dcf": {
+          "type": "object",
+          "required": ["equity_value_per_share"],
+          "properties": {
+            "pv_explicit_period_m": { "type": "number" },
+            "pv_terminal_value_m": { "type": "number" },
+            "terminal_pct_of_total": { "type": "number" },
+            "enterprise_value_m": { "type": "number" },
+            "less_net_debt_m": { "type": "number" },
+            "equity_value_m": { "type": "number" },
+            "shares_outstanding_m": { "type": "number" },
+            "equity_value_per_share": { "type": "number" },
+            "implied_upside_pct": { "type": "number" },
+            "sensitivity": {
+              "type": "object",
+              "description": "WACC vs terminal growth rate matrix",
+              "properties": {
+                "wacc_range": { "type": "array", "items": { "type": "number" } },
+                "growth_range": { "type": "array", "items": { "type": "number" } },
+                "matrix": {
+                  "type": "array",
+                  "items": {
+                    "type": "array",
+                    "items": { "type": "number" }
+                  },
+                  "description": "2D array: rows = WACC values, cols = growth values, cells = price per share"
+                }
+              }
+            }
+          }
+        },
+        "comps": {
+          "type": "object",
+          "properties": {
+            "peers": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "ticker": { "type": "string" },
+                  "ev_ebitda_ntm": { "type": "number" },
+                  "pe_fwd": { "type": "number" },
+                  "ev_revenue_ntm": { "type": "number" },
+                  "revenue_growth_pct": { "type": "number" },
+                  "ebitda_margin_pct": { "type": "number" }
+                }
+              }
+            },
+            "target_multiples": {
+              "type": "object",
+              "properties": {
+                "ev_ebitda": { "type": "number" },
+                "pe": { "type": "number" },
+                "ev_revenue": { "type": "number" }
+              }
+            },
+            "implied_value_range": {
+              "type": "object",
+              "properties": {
+                "low": { "type": "number" },
+                "mid": { "type": "number" },
+                "high": { "type": "number" }
+              }
+            }
+          }
+        },
+        "residual_income": {
+          "type": "object",
+          "description": "Residual income / excess return model as cross-check",
+          "properties": {
+            "book_value_per_share": { "type": "number" },
+            "excess_returns": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "fiscal_year": { "type": "integer" },
+                  "roe_pct": { "type": "number" },
+                  "cost_of_equity_pct": { "type": "number" },
+                  "excess_return_pct": { "type": "number" },
+                  "residual_income_per_share": { "type": "number" }
+                }
+              }
+            },
+            "pv_residual_income": { "type": "number" },
+            "terminal_ri": { "type": "number" },
+            "intrinsic_value_per_share": { "type": "number" }
+          }
+        },
+        "synthesis": {
+          "type": "object",
+          "required": ["fair_value_per_share", "method_weights", "rationale"],
+          "properties": {
+            "fair_value_per_share": { "type": "number" },
+            "method_weights": {
+              "type": "object",
+              "description": "Weights assigned to each valuation method",
+              "properties": {
+                "dcf": { "type": "number" },
+                "comps": { "type": "number" },
+                "residual_income": { "type": "number" }
+              }
+            },
+            "rationale": { "type": "string", "description": "Why these weights — which method is most appropriate for this company" },
+            "rating": { "type": "string", "enum": ["strong_buy", "buy", "hold", "sell", "strong_sell"] },
+            "current_price": { "type": "number" },
+            "implied_upside_pct": { "type": "number" }
+          }
+        }
+      }
+    },
+    "scenarios": {
+      "type": "object",
+      "required": ["bull", "base", "bear", "expected_value_per_share"],
+      "properties": {
+        "bull": {
+          "type": "object",
+          "required": ["narrative", "target_price", "probability_pct"],
+          "properties": {
+            "narrative": { "type": "string" },
+            "key_assumptions_changed": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "assumption": { "type": "string" },
+                  "base_value": { "type": "number" },
+                  "bull_value": { "type": "number" }
+                }
+              }
+            },
+            "revenue_terminal_m": { "type": "number" },
+            "ebitda_margin_terminal_pct": { "type": "number" },
+            "target_price": { "type": "number" },
+            "implied_upside_pct": { "type": "number" },
+            "probability_pct": { "type": "number" }
+          }
+        },
+        "base": {
+          "type": "object",
+          "required": ["narrative", "target_price", "probability_pct"],
+          "properties": {
+            "narrative": { "type": "string" },
+            "target_price": { "type": "number" },
+            "implied_upside_pct": { "type": "number" },
+            "probability_pct": { "type": "number" }
+          }
+        },
+        "bear": {
+          "type": "object",
+          "required": ["narrative", "target_price", "probability_pct"],
+          "properties": {
+            "narrative": { "type": "string" },
+            "key_assumptions_changed": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "assumption": { "type": "string" },
+                  "base_value": { "type": "number" },
+                  "bear_value": { "type": "number" }
+                }
+              }
+            },
+            "revenue_terminal_m": { "type": "number" },
+            "ebitda_margin_terminal_pct": { "type": "number" },
+            "target_price": { "type": "number" },
+            "implied_downside_pct": { "type": "number" },
+            "probability_pct": { "type": "number" }
+          }
+        },
+        "expected_value_per_share": { "type": "number", "description": "Probability-weighted target price" }
+      }
+    },
+    "consistency_checks": {
+      "type": "object",
+      "required": ["reinvestment_vs_growth", "roic_vs_narrative", "valuation_triangulation"],
+      "description": "CRITICAL: Agent 2 must populate this honestly. Agent 3 reads this first in QA pass.",
+      "properties": {
+        "reinvestment_vs_growth": {
+          "type": "object",
+          "required": ["consistent"],
+          "properties": {
+            "implied_reinvestment_rate_pct": { "type": "number", "description": "g / ROIC" },
+            "modeled_reinvestment_rate_pct": { "type": "number" },
+            "modeled_growth_pct": { "type": "number" },
+            "consistent": { "type": "boolean" },
+            "explanation": { "type": "string" }
+          }
+        },
+        "roic_vs_narrative": {
+          "type": "string",
+          "description": "Does ROIC trajectory match the narrative? e.g., 'asset-light' but ROIC declining = flag"
+        },
+        "valuation_triangulation": {
+          "type": "object",
+          "properties": {
+            "dcf_value": { "type": "number" },
+            "comps_value": { "type": "number" },
+            "ri_value": { "type": "number" },
+            "max_spread_pct": { "type": "number", "description": "Max % spread between methods" },
+            "flags": { "type": "string", "description": "If spread > 30%, explain why" }
+          }
+        },
+        "terminal_value_sanity": {
+          "type": "object",
+          "properties": {
+            "terminal_pct_of_ev": { "type": "number" },
+            "terminal_implied_multiple": { "type": "number" },
+            "reasonable": { "type": "boolean" },
+            "notes": { "type": "string" }
+          }
+        },
+        "growth_rate_sanity": {
+          "type": "object",
+          "properties": {
+            "terminal_growth_vs_gdp": { "type": "string" },
+            "revenue_cagr_vs_industry": { "type": "string" },
+            "margin_expansion_vs_history": { "type": "string" }
+          }
+        },
+        "all_checks_passed": { "type": "boolean" },
+        "unresolved_flags": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "required": ["model_completed_at"],
+      "properties": {
+        "model_completed_at": { "type": "string", "format": "date-time" },
+        "iterations": { "type": "integer", "description": "Number of self-correction loops" },
+        "total_tool_calls": { "type": "integer" }
+      }
+    }
+  }
+}
